@@ -157,7 +157,12 @@ pub unsafe extern "C" fn event_callback(
             timestamp: Instant::now(),
         });
 
-        SEQUENCE_RECORDER.check_sequence();
+        if SEQUENCE_RECORDER.is_in_sequence() {
+          println!("===In seq");
+          SEQUENCE_RECORDER.check_sequence();
+
+          return std::ptr::null_mut();
+        }
     }
 
     event // Pass the event along

@@ -45,6 +45,16 @@ impl KeyStrokeRecorder {
         self.last_stroke_timestamp = Instant::now();
     }
 
+    pub fn is_in_sequence(&self) -> bool {
+        match self.strokes.first() {
+           None => false,
+           Some(stroke) => {
+             // hard code left option key
+             stroke.key_code == 58
+           }
+        }
+    }
+
     pub fn check_sequence(&self) {
         // Retrieve key strokes and match the pattern
         // let mut sequence  = Vec::new();
