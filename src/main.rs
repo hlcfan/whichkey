@@ -13,6 +13,7 @@ mod cf_utils;
 mod accessibility;
 mod event_tap;
 mod sequence;
+mod config;
 
 // Import necessary items
 use utils::open_accessibility_preferences;
