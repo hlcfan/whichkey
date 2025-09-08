@@ -1,0 +1,24 @@
+leader_key = "option"
+
+[[groups]]
+name = "Open Applications"
+
+  [[groups.mappings]]
+  keys = "oc"
+  kind = "Application"
+  command = "Google Chrome"
+
+  [[groups.mappings]]
+  keys = "ovs"
+  kind = "Application"
+  command = "Visual Studio Code"
+
+  [[groups.mappings]]
+  keys = "of"
+  kind = "Application"
+  command = "Finder"
+
+  [[groups.mappings]]
+  keys = "os"
+  kind = "Application"
+  command = "Slack"
