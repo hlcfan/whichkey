@@ -1,15 +1,10 @@
 use nix::libc::_exit;
 use nix::unistd::{execvp, fork, getpid, setsid, ForkResult};
-use std::error;
-use std::os::unix::process::CommandExt;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::time::{Duration, Instant};
-// use std::{thread, time::Duration};
 use std::ffi::CString;
 
-use crate::{config, sequence};
-
-// use crate::config;
+use crate::{config};
 
 const KEY_STROKE_INTERVAL: u64 = 1000;
 
@@ -22,8 +17,8 @@ pub struct KeyStrokeRecorder {
 #[derive(Debug)]
 pub struct KeyStroke {
     pub key_code: i64,
-    pub key_typ: u32,
-    pub timestamp: Instant,
+    // pub key_typ: u32,
+    // pub timestamp: Instant,
 }
 
 impl KeyStrokeRecorder {
@@ -163,7 +158,7 @@ impl KeyStrokeRecorder {
             50 => "`",
             51 => "delete",
             53 => "escape",
-            55 => "cmd",
+            55 => "command",
             56 => "shift",
             57 => "capslock",
             58 => "option",
