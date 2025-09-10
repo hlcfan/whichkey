@@ -1,25 +1,36 @@
-use core_foundation::runloop::{CFRunLoopRun, CFRunLoopGetCurrent, CFRunLoopAddSource};
 use core_foundation::base::CFRelease;
-use std::process;
+use core_foundation::runloop::{CFRunLoopAddSource, CFRunLoopGetCurrent, CFRunLoopRun};
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
 use std::fs::File;
-use std::path::PathBuf;
 use std::os::raw::c_void;
+use std::path::PathBuf;
+use std::process;
 use std::ptr;
-use simplelog::{CombinedLogger, TermLogger, WriteLogger, Config, LevelFilter, TerminalMode, ColorChoice};
+use std::{fs, io::Error};
 
 // Declare the modules
-mod utils;
-mod cf_utils;
 mod accessibility;
+mod cf_utils;
+mod config;
 mod event_tap;
 mod sequence;
-mod config;
+mod utils;
 
 // Import necessary items
-use utils::open_accessibility_preferences;
-use cf_utils::core_foundation_private::kCFRunLoopCommonModes;
 use accessibility::*;
+use cf_utils::core_foundation_private::kCFRunLoopCommonModes;
 use event_tap::*;
+use utils::open_accessibility_preferences;
+
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+struct Args {
+    /// Command are install, start
+    command: String,
+}
 
 // Type Aliases & Structs for C Types are now in accessibility.rs and event_tap.rs
 
@@ -30,25 +41,53 @@ use event_tap::*;
 // cf_string_ref and cfstring_to_string are now in cf_utils.rs
 
 // get_app_name_from_pid and open_accessibility_preferences are now in utils.rs
+// CoreFoundation_Private module is now in cf_utils.rs
 
 fn main() {
+    let args = Args::parse();
+    match args.command.as_str() {
+        "install" => match install() {
+            Ok(()) => {
+                println!("Service installed successfully.");
+            }
+            Err(e) => {
+                log::error!("Service installation failed: {}", e);
+            }
+        },
+        "start" => {
+            listen();
+        }
+        _ => {
+            println!("invalid command");
+        }
+    }
+}
+
+fn listen() {
     // Determine log path
     let home_dir = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    let log_path = PathBuf::from(home_dir).join("macos_watcher.log");
+    let log_path = PathBuf::from(home_dir).join("whichkey.log");
 
     // Initialize simplelog
     let log_file = File::create(&log_path).expect("Failed to create log file");
-    CombinedLogger::init(
-        vec![
-            TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
-            WriteLogger::new(LevelFilter::Debug, Config::default(), log_file),
-        ]
-    ).expect("Failed to initialize logger");
+    CombinedLogger::init(vec![
+        TermLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
+        WriteLogger::new(LevelFilter::Debug, Config::default(), log_file),
+    ])
+    .expect("Failed to initialize logger");
 
     // Log initial messages using the new logger
-    log::info!("----- Starting macOS Watcher daemon (version 2.0) -----");
+    log::info!("----- Starting Whichkey -----");
     log::info!("Log file created at: {:?}", log_path);
-    log::info!("Current executable: {:?}", std::env::current_exe().unwrap_or_default());
+    log::info!(
+        "Current executable: {:?}",
+        std::env::current_exe().unwrap_or_default()
+    );
 
     unsafe {
         // Check if accessibility is enabled using functions from accessibility module
@@ -77,16 +116,18 @@ fn main() {
         log::debug!("Attempting to create system-wide accessibility element...");
         let system_wide = ax_ui_element_create_system_wide();
         if system_wide.is_null() {
-             log::error!("Failed to create system-wide accessibility element.");
-             eprintln!("Error: Failed to create system-wide accessibility element. Exiting.");
-             process::exit(1);
+            log::error!("Failed to create system-wide accessibility element.");
+            eprintln!("Error: Failed to create system-wide accessibility element. Exiting.");
+            process::exit(1);
         }
         log::debug!("Created system-wide accessibility element");
 
         log::debug!("Setting up CGEventTap for mouse clicks... ");
         //
         // Listens to both normal keys and modifier keys
-        let event_mask = (1 << K_CG_EVENT_KEY_DOWN) | (1<<K_CG_EVENT_FLAGS_CHANGED)| (1 << K_CG_EVENT_NX_SYSDEFINED);
+        let event_mask = (1 << K_CG_EVENT_KEY_DOWN)
+            | (1 << K_CG_EVENT_FLAGS_CHANGED)
+            | (1 << K_CG_EVENT_NX_SYSDEFINED);
 
         let event_tap = CGEventTapCreate(
             K_CG_SESSION_EVENT_TAP,
@@ -108,21 +149,26 @@ fn main() {
         if run_loop_source.is_null() {
             log::error!("Failed to create RunLoop source for event tap.");
             eprintln!("Error: Failed to create RunLoop source for event tap.");
-             if !event_tap.is_null() { CFRelease(event_tap as *const c_void); }
+            if !event_tap.is_null() {
+                CFRelease(event_tap as *const c_void);
+            }
             process::exit(1);
         }
         log::debug!("RunLoop source created.");
 
         let current_run_loop = CFRunLoopGetCurrent();
         CFRunLoopAddSource(current_run_loop, run_loop_source, kCFRunLoopCommonModes);
-         log::debug!("Event tap source added to run loop.");
+        log::debug!("Event tap source added to run loop.");
 
         CGEventTapEnable(event_tap, true);
         log::debug!("CGEventTap enabled.");
 
         log::info!("Monitoring input events via CGEventTap.");
         println!("Successfully running with accessibility permissions!");
-        println!("Monitoring input events (clicks, keys). Check logs at: {}", log_path.display());
+        println!(
+            "Monitoring input events (clicks, keys). Check logs at: {}",
+            log_path.display()
+        );
 
         log::info!("Starting main run loop...");
         CFRunLoopRun();
@@ -135,4 +181,47 @@ fn main() {
     }
 }
 
-// CoreFoundation_Private module is now in cf_utils.rs
+fn install() -> Result<(), Error> {
+    let plist = format!(
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>Label</key>
+    <string>com.hlcfan.whichkey</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{}</string>
+        <string>start</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+        <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+ 	     <false/>
+ 	     <key>Crashed</key>
+ 	     <true/>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/srhd_sylvanfranklin.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/srhd_sylvanfranklin.err.log</string>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>Nice</key>
+    <integer>-20</integer>
+</dict>
+</plist>",
+        std::env::current_exe().unwrap().to_str().unwrap()
+    );
+
+    let home_dir = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    let plist_path = PathBuf::from(home_dir)
+        .join("Library")
+        .join("LaunchAgents")
+        .join("config.hlcfan.whichkey.plist");
+
+    fs::write(plist_path, plist)?;
+    Ok(())
+}
