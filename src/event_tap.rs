@@ -128,9 +128,9 @@ pub unsafe extern "C" fn event_callback(
     }
 
     // Get PID common to both event types we handle
-    let pid =
-        unsafe { CGEventGetIntegerValueField(event, K_CG_EVENT_TARGET_UNIX_PROCESS_ID) } as i32;
-    let app_name = get_app_name_from_pid(pid); // Use imported function
+    // let pid =
+    //     unsafe { CGEventGetIntegerValueField(event, K_CG_EVENT_TARGET_UNIX_PROCESS_ID) } as i32;
+    // let app_name = get_app_name_from_pid(pid); // Use imported function
 
     if typ == K_CG_EVENT_KEY_DOWN || typ == K_CG_EVENT_FLAGS_CHANGED {
         let keycode = unsafe { CGEventGetIntegerValueField(event, K_CG_KEYBOARD_EVENT_KEYCODE) };
@@ -142,14 +142,14 @@ pub unsafe extern "C" fn event_callback(
             return event;
         }
 
-        log::info!(
-            "Key Down: App='{}' (PID={}), KeyCode={}, Flags={}, Type: {}",
-            app_name,
-            pid,
-            keycode,
-            flags,
-            typ,
-        );
+        // log::info!(
+        //     "Key Down: App='{}' (PID={}), KeyCode={}, Flags={}, Type: {}",
+        //     app_name,
+        //     pid,
+        //     keycode,
+        //     flags,
+        //     typ,
+        // );
 
         SEQUENCE_RECORDER.record(KeyStroke {
             key_code: keycode,

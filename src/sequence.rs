@@ -1,5 +1,5 @@
-use nix::unistd::{execvp, fork, getpid, setsid, ForkResult};
 use nix::libc::_exit;
+use nix::unistd::{execvp, fork, getpid, setsid, ForkResult};
 use std::error;
 use std::os::unix::process::CommandExt;
 use std::process::{Command, Stdio};
@@ -87,10 +87,8 @@ impl KeyStrokeRecorder {
                     match mapping.kind.as_str() {
                         "Application" => {
                             // Self::fork_and_exec(&mapping.command);
-                            let cmd_result = Command::new("open")
-                                .arg("-a")
-                                .arg(&mapping.command)
-                                .spawn();
+                            let cmd_result =
+                                Command::new("open").arg("-a").arg(&mapping.command).spawn();
 
                             match cmd_result {
                                 Ok(child) => {
@@ -226,6 +224,7 @@ impl KeyStrokeRecorder {
         }
     }
 
+    #[allow(dead_code)]
     fn fork_and_exec(command: &String) {
         // First fork
         match unsafe { fork() }.expect("First fork failed") {
