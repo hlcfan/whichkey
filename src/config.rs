@@ -1,6 +1,6 @@
-use libc::exit;
 use serde::Deserialize;
 use std::fs;
+use std::path::PathBuf;
 use std::process;
 
 #[derive(Deserialize)]
@@ -15,7 +15,7 @@ pub struct Group {
     pub mappings: Vec<Mapping>,
 }
 
-#[derive(Deserialize,Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Mapping {
     pub keys: String,
     pub kind: String,
@@ -24,24 +24,27 @@ pub struct Mapping {
 
 impl Config {
     pub fn new() -> Self {
-      // TODO: change to config file from $HOME directory
-      let content = match fs::read_to_string("config.toml") {
-        Ok(c) => c,
-        Err(e) => {
-          log::error!("Failed to read file: {}", e);
-          process::exit(1);
-        }
-      };
+        let home_dir = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        let config_file_path = PathBuf::from(home_dir)
+            .join(".config")
+            .join("whichkey")
+            .join("config.toml");
+        let content = match fs::read_to_string(config_file_path) {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to read file: {}", e);
+                process::exit(1);
+            }
+        };
 
-      let config = match toml::from_str(&content) {
-        Ok(c) => c,
-        Err(e) => {
-          log::error!("Failed to deserialize config: {}", e);
-          process::exit(1);
-        }
-      };
+        let config = match toml::from_str(&content) {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to deserialize config: {}", e);
+                process::exit(1);
+            }
+        };
 
-      return config;
+        return config;
     }
-
 }
