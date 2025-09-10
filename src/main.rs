@@ -46,14 +46,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
     match args.command.as_str() {
-        "install" => match install() {
-            Ok(()) => {
-                println!("Service installed successfully.");
-            }
-            Err(e) => {
-                log::error!("Service installation failed: {}", e);
-            }
-        },
+        "install" => install(),
         "start" => {
             listen();
         }
@@ -181,7 +174,29 @@ fn listen() {
     }
 }
 
-fn install() -> Result<(), Error> {
+fn install() {
+    match install_config() {
+        Ok(()) => {
+            println!(
+                "Configuration file generated at $HOME/.config/whichkey/config.toml successfully."
+            );
+        }
+        Err(e) => {
+            eprintln!("Failed to generate configuration failed at $HOME/.config/whichkey/config.toml. Error: {}", e);
+        }
+    }
+
+    match install_service() {
+        Ok(()) => {
+            println!("Service installed successfully.");
+        }
+        Err(e) => {
+            eprintln!("Service installation failed: {}", e);
+        }
+    }
+}
+
+fn install_service() -> Result<(), Error> {
     let plist = format!(
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
@@ -223,5 +238,35 @@ fn install() -> Result<(), Error> {
         .join("config.hlcfan.whichkey.plist");
 
     fs::write(plist_path, plist)?;
+    Ok(())
+}
+
+fn install_config() -> Result<(), Error> {
+    let home_dir = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    let config_file_path = PathBuf::from(home_dir)
+        .join(".config")
+        .join("whichkey")
+        .join("config.toml");
+
+    if config_file_path.as_path().exists() {
+        return Err(Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            "Configuration already exists.",
+        ));
+    }
+
+    let config = format!(
+        "leader_key = \"option\"
+
+[[groups]]
+name = \"Open Applications\"
+
+  [[groups.mappings]]
+  keys = \"of\"
+  kind = \"Application\"
+  command = \"Finder\""
+    );
+
+    fs::write(config_file_path, config)?;
     Ok(())
 }
