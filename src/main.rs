@@ -7,8 +7,10 @@ use std::fs::File;
 use std::os::raw::c_void;
 use std::path::PathBuf;
 use std::process;
+use std::process::Command;
 use std::ptr;
 use std::{fs, io::Error};
+use std::{thread, time};
 
 // Declare the modules
 mod accessibility;
@@ -47,16 +49,17 @@ fn main() {
     let args = Args::parse();
     match args.command.as_str() {
         "install" => install(),
-        "start" => {
-            listen();
-        }
+        "run" => run(),
+        "start" => start(),
+        "stop" => stop(),
+        "restart" => restart(),
         _ => {
             println!("invalid command");
         }
     }
 }
 
-fn listen() {
+fn run() {
     // Determine log path
     let home_dir = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
     let log_path = PathBuf::from(home_dir).join("whichkey.log");
@@ -196,6 +199,46 @@ fn install() {
     }
 }
 
+fn start() {
+    let cmd_result = Command::new("launchctl")
+        .arg("load")
+        .arg("-w")
+        .arg(service_path())
+        .spawn();
+
+    match cmd_result {
+        Ok(_) => {
+            println!("Whichkey started.")
+        }
+        Err(err) => {
+            eprintln!("Failed to start Whichkey: {}", err);
+        }
+    }
+}
+
+fn stop() {
+    let cmd_result = Command::new("launchctl")
+        .arg("unload")
+        .arg("-w")
+        .arg(service_path())
+        .spawn();
+
+    match cmd_result {
+        Ok(_) => {
+            println!("Whichkey stopped.")
+        }
+        Err(err) => {
+            eprintln!("Failed to stop Whichkey: {}", err);
+        }
+    }
+}
+
+fn restart() {
+    stop();
+    thread::sleep(time::Duration::from_millis(10));
+    start();
+}
+
 fn install_service() -> Result<(), Error> {
     let plist = format!(
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
@@ -229,11 +272,7 @@ fn install_service() -> Result<(), Error> {
         std::env::current_exe().unwrap().to_str().unwrap()
     );
 
-    let home_dir = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    let plist_path = PathBuf::from(home_dir)
-        .join("Library")
-        .join("LaunchAgents")
-        .join("config.hlcfan.whichkey.plist");
+    let plist_path = service_path();
 
     fs::write(plist_path, plist)?;
     Ok(())
@@ -265,11 +304,19 @@ name = \"Open Applications\"
   command = \"Finder\""
     );
 
-    if let Some(parent_dir) = config_file_path.parent(){
-      fs::create_dir_all(parent_dir)?;
+    if let Some(parent_dir) = config_file_path.parent() {
+        fs::create_dir_all(parent_dir)?;
     }
 
     fs::write(config_file_path, config)?;
 
     Ok(())
+}
+fn service_path() -> PathBuf {
+    let home_dir = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+
+    PathBuf::from(home_dir)
+        .join("Library")
+        .join("LaunchAgents")
+        .join("com.hlcfan.whichkey.plist")
 }
