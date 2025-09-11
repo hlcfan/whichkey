@@ -7,6 +7,20 @@ use std::time::{Duration, Instant};
 use crate::config;
 
 const KEY_STROKE_INTERVAL: u64 = 1000;
+const NUM_LEADER_KEY_STROKES: usize = 3;
+
+// refer to https://docs.rs/objc2-core-graphics/latest/src/objc2_core_graphics/generated/CGEventTypes.rs.html#171
+pub const K_CG_EVENT_FLAG_MASK_OPTION_DOWN: u64 = 524576;
+pub const K_CG_EVENT_FLAG_MASK_OPTION_UP: u64 = 256;
+
+pub const K_CG_EVENT_FLAG_MASK_COMMAND_DOWN: u64 = 1048840;
+pub const K_CG_EVENT_FLAG_MASK_COMMAND_UP: u64 = 256;
+
+pub const K_CG_EVENT_FLAG_MASK_CONTROL_DOWN: u64 = 262401;
+pub const K_CG_EVENT_FLAG_MASK_CONTROL_UP: u64 = 256;
+
+pub const K_CG_EVENT_FLAG_MASK_SHIFT_DOWN: u64 = 131330;
+pub const K_CG_EVENT_FLAG_MASK_SHIFT_UP: u64 = 256;
 
 pub struct KeyStrokeRecorder {
     pub strokes: Vec<KeyStroke>,
@@ -17,7 +31,8 @@ pub struct KeyStrokeRecorder {
 #[derive(Debug)]
 pub struct KeyStroke {
     pub key_code: i64,
-    // pub key_typ: u32,
+    pub key_typ: u32,
+    pub flag: u64,
     // pub timestamp: Instant,
 }
 
@@ -40,8 +55,6 @@ impl KeyStrokeRecorder {
         // If leader key is hit, don't forward the key strokes
 
         let elapsed = self.last_stroke_timestamp.elapsed();
-        // println!("===elapsed: {:?}", elapsed);
-        // TODO: move the interval to config
         if elapsed <= Duration::from_millis(KEY_STROKE_INTERVAL) {
             // println!("====within {}, key: {:?}", KEY_STROKE_INTERVAL, key_stroke);
             self.strokes.push(key_stroke);
@@ -52,34 +65,51 @@ impl KeyStrokeRecorder {
         self.last_stroke_timestamp = Instant::now();
     }
 
+    // is_in_sequence checks if leader key is down and up
+    // it needs to check the first two key strokes, firts is down, second is up
     pub fn is_in_sequence(&self) -> bool {
-        // check first 2 key strokes see if they're pressed and released
-        match self.strokes.first() {
-            None => false,
-            Some(stroke) => Self::key_code_to_name(stroke.key_code) == self.config.leader_key,
+        if self.strokes.len() < NUM_LEADER_KEY_STROKES {
+            return false;
         }
+
+        let third_key = &self.strokes[2];
+        if Self::key_code_to_name(third_key.key_code) == self.config.leader_key {
+            return false;
+        }
+
+        let first_key = &self.strokes[0];
+        let second_key = &self.strokes[1];
+
+        Self::key_code_to_name(first_key.key_code) == self.config.leader_key
+            && Self::key_code_to_name(second_key.key_code) == self.config.leader_key
+            && Self::leader_key_down(first_key.key_code, first_key.flag)
+            && Self::leader_key_up(second_key.key_code, second_key.flag)
     }
 
-    pub fn check_sequence(&self) {
+    pub fn check_sequence(&mut self) {
+        if self.strokes.len() < NUM_LEADER_KEY_STROKES {
+            return;
+        }
+
         // Retrieve key strokes and match the pattern
         // let mut sequence  = Vec::new();
         let seq: Vec<_> = self.strokes.iter().map(|stroke| stroke.key_code).collect();
 
         let seq_array: &[i64] = &seq;
-        println!("===seq array: {:?}", seq_array);
+        // println!("===seq array: {:?}", seq_array);
 
-        let key_sequence = seq_array[1..]
+        let key_sequence = seq_array[2..]
             .iter()
             .map(|seq| Self::key_code_to_name(*seq).to_string())
             .collect::<Vec<String>>()
             .join("");
 
-        println!("====key seq: {}", key_sequence);
+        // println!("====key seq: {}", key_sequence);
 
         for group in self.config.groups.iter() {
             for mapping in group.mappings.iter() {
                 if mapping.keys == key_sequence {
-                    println!("===mapping found {:?}", mapping);
+                    // println!("===mapping found {:?}", mapping);
                     match mapping.kind.as_str() {
                         "Application" => {
                             // Self::fork_and_exec(&mapping.command);
@@ -97,6 +127,8 @@ impl KeyStrokeRecorder {
                         }
                         _ => {}
                     }
+
+                    self.strokes.clear();
                 }
             }
         }
@@ -163,10 +195,10 @@ impl KeyStrokeRecorder {
             56 => "shift",
             57 => "capslock",
             58 => "option",
-            59 => "ctrl",
+            59 => "control",
             60 => "rightshift",
             61 => "rightoption",
-            62 => "rightctrl",
+            62 => "rightcontrol",
             63 => "fn",
             64 => "f17",
             65 => "keypad.",
@@ -217,6 +249,26 @@ impl KeyStrokeRecorder {
             125 => "down",
             126 => "up",
             _ => "unknown",
+        }
+    }
+
+    fn leader_key_up(code: i64, flag: u64) -> bool {
+        match code {
+            55 => flag & K_CG_EVENT_FLAG_MASK_COMMAND_UP > 0,
+            56 => flag & K_CG_EVENT_FLAG_MASK_SHIFT_UP > 0,
+            58 => flag & K_CG_EVENT_FLAG_MASK_OPTION_UP > 0,
+            59 => flag & K_CG_EVENT_FLAG_MASK_CONTROL_UP > 0,
+            _ => false,
+        }
+    }
+
+    fn leader_key_down(code: i64, flag: u64) -> bool {
+        match code {
+            55 => flag & K_CG_EVENT_FLAG_MASK_COMMAND_DOWN > 0,
+            56 => flag & K_CG_EVENT_FLAG_MASK_SHIFT_DOWN > 0,
+            58 => flag & K_CG_EVENT_FLAG_MASK_OPTION_DOWN > 0,
+            59 => flag & K_CG_EVENT_FLAG_MASK_CONTROL_DOWN > 0,
+            _ => false,
         }
     }
 

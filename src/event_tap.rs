@@ -39,10 +39,10 @@ pub const K_CG_EVENT_TAP_DEFAULT: CGEventTapOptions = 0x00000000;
 // CGEventType
 #[allow(dead_code)]
 pub const K_CG_EVENT_NULL: CGEventType = 0; // Internal use
-                                            //
-                                            // CGEventType Enum
-                                            // https://learn.microsoft.com/en-us/dotnet/api/coregraphics.cgeventtype?view=xamarin-mac-sdk-14
-                                            // pub const K_CG_EVENT_LEFT_MOUSE_DOWN: CGEventType = 1;
+
+// CGEventType Enum
+// https://learn.microsoft.com/en-us/dotnet/api/coregraphics.cgeventtype?view=xamarin-mac-sdk-14
+// pub const K_CG_EVENT_LEFT_MOUSE_DOWN: CGEventType = 1;
 pub const K_CG_EVENT_KEY_DOWN: CGEventType = 10;
 pub const K_CG_EVENT_NX_SYSDEFINED: CGEventType = 14;
 pub const K_CG_EVENT_FLAGS_CHANGED: CGEventType = 12;
@@ -119,25 +119,15 @@ pub unsafe extern "C" fn event_callback(
             typ,
         );
 
-        // Check against option, command, control key presses
-        // If we need to match other keys, need to xand these
-        // refer to https://docs.rs/objc2-core-graphics/latest/src/objc2_core_graphics/generated/CGEventTypes.rs.html#171
-        // gotta check both key down and key up events, make sure the leader key is up
-        if typ == K_CG_EVENT_FLAGS_CHANGED
-            && (flags & K_CG_EVENT_FLAG_MASK_OPTION_ALTERNATE) == 0
-            // && (flags & K_CG_EVENT_FLAG_MASK_COMMAND_ALTERNATE) == 0
-            // && (flags & K_CG_EVENT_FLAG_MASK_CONTROL_ALTERNATE) == 0
-        {
-            return event;
-        }
-
         SEQUENCE_RECORDER.record(KeyStroke {
             key_code: keycode,
-            // key_typ: typ,
+            key_typ: typ,
+            flag: flags,
             // timestamp: Instant::now(),
         });
 
         if SEQUENCE_RECORDER.is_in_sequence() {
+            println!("====in sequence");
             SEQUENCE_RECORDER.check_sequence();
 
             return std::ptr::null_mut();
