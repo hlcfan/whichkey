@@ -90,7 +90,6 @@ pub unsafe extern "C" fn event_callback(
     event: CGEventRef,
     user_info: *mut c_void,
 ) -> CGEventRef {
-    println!("DEBUG: Event tap disabled (type: {})", typ);
     if user_info.is_null() {
         log::error!("userInfo (system_wide element) is null in callback!");
         return event; // Cannot proceed
@@ -98,11 +97,11 @@ pub unsafe extern "C" fn event_callback(
 
     // Handle tap disable events
     if typ == K_CG_EVENT_TAP_DISABLED_BY_TIMEOUT || typ == K_CG_EVENT_TAP_DISABLED_BY_USER_INPUT {
-        println!("DEBUG: Event tap disabled (type: {})", typ);
-        log::warn!(
-            "Event Tap disabled (type: {})! Input monitoring stopped.",
-            typ
-        );
+        // println!("DEBUG: Event tap disabled (type: {})", typ);
+        // log::warn!(
+        //     "Event Tap disabled (type: {})! Input monitoring stopped.",
+        //     typ
+        // );
         // We might need to re-enable the tap if desired.
         // unsafe { CGEventTapEnable(proxy as CFMachPortRef, true) }; // Needs unsafe block if uncommented
         return event; // Return the event directly
