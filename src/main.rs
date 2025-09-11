@@ -219,13 +219,11 @@ fn install_service() -> Result<(), Error> {
  	     <true/>
     </dict>
     <key>StandardOutPath</key>
-    <string>/tmp/srhd_sylvanfranklin.out.log</string>
+    <string>/tmp/whichkey.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/srhd_sylvanfranklin.err.log</string>
+    <string>/tmp/whichkey.err.log</string>
     <key>ProcessType</key>
     <string>Interactive</string>
-    <key>Nice</key>
-    <integer>-20</integer>
 </dict>
 </plist>",
         std::env::current_exe().unwrap().to_str().unwrap()
@@ -267,6 +265,11 @@ name = \"Open Applications\"
   command = \"Finder\""
     );
 
+    if let Some(parent_dir) = config_file_path.parent(){
+      fs::create_dir_all(parent_dir)?;
+    }
+
     fs::write(config_file_path, config)?;
+
     Ok(())
 }

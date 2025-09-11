@@ -1,10 +1,10 @@
 use nix::libc::_exit;
 use nix::unistd::{execvp, fork, getpid, setsid, ForkResult};
+use std::ffi::CString;
 use std::process::Command;
 use std::time::{Duration, Instant};
-use std::ffi::CString;
 
-use crate::{config};
+use crate::config;
 
 const KEY_STROKE_INTERVAL: u64 = 1000;
 
@@ -53,6 +53,7 @@ impl KeyStrokeRecorder {
     }
 
     pub fn is_in_sequence(&self) -> bool {
+        // check first 2 key strokes see if they're pressed and released
         match self.strokes.first() {
             None => false,
             Some(stroke) => Self::key_code_to_name(stroke.key_code) == self.config.leader_key,
