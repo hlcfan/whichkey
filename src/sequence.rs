@@ -31,7 +31,7 @@ pub struct KeyStrokeRecorder {
 #[derive(Debug)]
 pub struct KeyStroke {
     pub key_code: i64,
-    pub key_typ: u32,
+    // pub key_typ: u32,
     pub flag: u64,
     // pub timestamp: Instant,
 }
@@ -122,6 +122,19 @@ impl KeyStrokeRecorder {
                                 }
                                 Err(err) => {
                                     log::error!("Failed to open App : {}", err);
+                                }
+                            }
+                        }
+                        "Command" => {
+                            let cmd_result =
+                                Command::new("sh").arg("-c").arg(&mapping.command).spawn();
+
+                            match cmd_result {
+                                Ok(child) => {
+                                    log::info!("Command ran successfully (pid: {}).", child.id());
+                                }
+                                Err(err) => {
+                                    log::error!("Failed to run command: {}", err);
                                 }
                             }
                         }

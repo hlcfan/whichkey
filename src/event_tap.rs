@@ -120,13 +120,13 @@ pub unsafe extern "C" fn event_callback(
 
         SEQUENCE_RECORDER.record(KeyStroke {
             key_code: keycode,
-            key_typ: typ,
+            // key_typ: typ,
             flag: flags,
             // timestamp: Instant::now(),
         });
 
         if SEQUENCE_RECORDER.is_in_sequence() {
-            println!("====in sequence");
+            // println!("====in sequence");
             SEQUENCE_RECORDER.check_sequence();
 
             return std::ptr::null_mut();
