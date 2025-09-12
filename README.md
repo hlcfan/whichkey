@@ -4,7 +4,7 @@ A macOS key binding utility that listens to key presses and executes commands ba
 
 ## Features
 
-- **Leader Key**: support `option`, `control`, `command`, `shift` keys
+- **Leader Key**: Support `option`, `control`, `command`, `shift` keys
 - **Custom Key Sequences**: Create multi-key combinations for different actions
 - **Application Launching**: Quick access to your favorite applications
 - **Run commands**: Run commands
@@ -69,10 +69,17 @@ name = "Open Applications"
   kind = "Application"
   command = "Finder"
 
+[[groups]]
+name = "Run commands"
+
   [[groups.mappings]]
-  keys = "os"
-  kind = "Application"
-  command = "Slack"
+  keys = "rs"
+  kind = "Command"
+  command = """osascript -e 'tell application "Safari"
+    open location "https://apple.com"
+    activate
+end tell'"""
+
 ```
 
 ### Configuration Options
@@ -101,17 +108,15 @@ The `leader_key` can be set to any of the following modifier keys:
 
 ### Using Key Bindings
 
-1. Press leader key (e.g., Option)
+1. Press leader key (e.g., Option, Control, Command, Shift)
 2. Type the key sequence (e.g., "of" for Finder)
 4. The configured action will execute
 
 ### Example Usage
 
-With the default configuration:
 - `Option + o + f` → Opens Finder
 - `Option + o + c` → Opens Google Chrome
 - `Option + o + vs` → Opens Visual Studio Code
-- `Option + o + s` → Opens Slack
 
 ## Key Sequence Timing
 
