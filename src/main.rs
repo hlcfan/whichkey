@@ -250,7 +250,7 @@ fn install_service() -> Result<(), Error> {
     <key>ProgramArguments</key>
     <array>
         <string>{}</string>
-        <string>start</string>
+        <string>run</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
