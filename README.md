@@ -7,7 +7,7 @@ A macOS key binding utility that listens to key presses and executes commands ba
 - **Leader Key**: Support `option`, `control`, `command`, `shift` keys
 - **Custom Key Sequences**: Create multi-key combinations for different actions
 - **Application Launching**: Quick access to your favorite applications
-- **Run commands**: Run commands
+- **Run commands**: Run shell commands
 
 ## Requirements
 
@@ -48,6 +48,7 @@ WhichKey uses a TOML configuration file located at `~/.config/whichkey/config.to
 
 ### Sample Configuration
 
+Refer to the config.toml and AppleScripts in example folder.
 ```toml
 leader_key = "option"
 
@@ -97,7 +98,6 @@ The `leader_key` can be set to any of the following modifier keys:
 ## Usage
 
 ### Starting WhichKey
-
 ```bash
 ./target/release/whichkey start
 ```
@@ -113,6 +113,7 @@ The `leader_key` can be set to any of the following modifier keys:
 - `Option + o + f` → Opens Finder
 - `Option + o + c` → Opens Google Chrome
 - `Option + o + vs` → Opens Visual Studio Code
+- `Option + m + hs` → Split the recent *current frontmost window* and *second most recent window* horizontally
 
 ## Key Sequence Timing
 
@@ -124,4 +125,4 @@ Contributions are welcome! Please feel free to submit issues, feature requests, 
 
 ## Inspiration
 
-This project is inspired by <mcreference link="https://github.com/folke/which-key.nvim" index="0">which-key.nvim</mcreference>, bringing similar key binding functionality to the macOS desktop environment.
+This project is inspired by [which-key.nvim](https://github.com/folke/which-key.nvim), bringing similar key binding functionality to the macOS desktop environment.
