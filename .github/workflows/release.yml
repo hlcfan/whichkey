@@ -27,6 +27,8 @@ jobs:
 
     - name: Build release binary
       run: cargo build --release
+      env:
+        RUSTFLAGS: "-D warnings"
 
     - name: Get binary name and prepare artifact
       id: binary
