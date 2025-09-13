@@ -16,22 +16,28 @@ A macOS key binding utility that listens to key presses and executes commands ba
 
 ## Installation
 
-### Building from Source
+### Download binary from releases page or build it from source
 
-1. Clone the repository:
+  [releases](https://github.com/hlcfan/whichkey/releases)
    ```bash
+   # build from source
    git clone https://github.com/hlcfan/whichkey
    cd whichkey
-   ```
-
-2. Build the project:
-   ```bash
    cargo build --release
    ```
-
-3. Install the service and configuration:
+### Install the service and configuration:
    ```bash
-   ./target/release/whichkey install
+   whichkey install
+   ```
+### Update config file accordingly
+
+   ```
+    nvim ~/.config/whichkey/config.toml
+   ```
+
+### Start the service
+   ```bash
+   whichkey start
    ```
 
 ### Accessibility Permissions
@@ -97,11 +103,6 @@ The `leader_key` can be set to any of the following modifier keys:
 
 ## Usage
 
-### Starting WhichKey
-```bash
-./target/release/whichkey start
-```
-
 ### Using Key Bindings
 
 1. Press leader key (e.g., Option, Control, Command, Shift)
@@ -113,7 +114,7 @@ The `leader_key` can be set to any of the following modifier keys:
 - `Option + o + f` → Opens Finder
 - `Option + o + c` → Opens Google Chrome
 - `Option + o + vs` → Opens Visual Studio Code
-- `Option + m + hs` → Split the recent *current frontmost window* and *second most recent window* horizontally
+- `Option + m + hs` → Split the window with *current frontmost window* and *second most recent window* horizontally
 
 ## Key Sequence Timing
 

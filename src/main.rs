@@ -30,7 +30,7 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 struct Args {
-    /// Command are install, start
+    /// Command are install, start, stop, and restart
     command: String,
 }
 
