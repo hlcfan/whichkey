@@ -73,13 +73,9 @@ name = "Open Applications"
 name = "Run commands"
 
   [[groups.mappings]]
-  keys = "rs"
+  keys = "hs"
   kind = "Command"
-  command = """osascript -e 'tell application "Safari"
-    open location "https://apple.com"
-    activate
-end tell'"""
-
+  command = "osascript ~/.config/whichkey/apple_scripts/hsplit.scpt"
 ```
 
 ### Configuration Options

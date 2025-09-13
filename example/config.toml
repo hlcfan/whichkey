@@ -1,0 +1,77 @@
+leader_key = "option"
+
+[[groups]]
+name = "Open Applications"
+
+  [[groups.mappings]]
+  keys = "oc"
+  kind = "Application"
+  command = "Google Chrome"
+
+  [[groups.mappings]]
+  keys = "ovs"
+  kind = "Application"
+  command = "Visual Studio Code"
+
+  [[groups.mappings]]
+  keys = "of"
+  kind = "Application"
+  command = "Finder"
+
+  [[groups.mappings]]
+  keys = "os"
+  kind = "Application"
+  command = "Slack"
+
+[[groups]]
+name = "Run commands"
+
+  [[groups.mappings]]
+  keys = "rt"
+  kind = "Command"
+  command = "trae"
+
+  [[groups.mappings]]
+  keys = "rs"
+  kind = "Command"
+  command = """delay 5
+set thePosition to {0, 22}
+set theSize to {800, 600}
+set theBounds to {thePosition} & {theSize}
+
+tell application "System Events"
+    tell window 1 of (process 1 whose it is frontmost) to ¬
+        set {position, size} to theBounds
+end tell
+"""
+
+  [[groups.mappings]]
+  keys = "ml"
+  kind = "Command"
+  command = "osascript ~/.config/whichkey/apple_scripts/move_left.scpt"
+
+  [[groups.mappings]]
+  keys = "mr"
+  kind = "Command"
+  command = "osascript ~/.config/whichkey/apple_scripts/move_right.scpt"
+
+  [[groups.mappings]]
+  keys = "hs"
+  kind = "Command"
+  command = "osascript ~/.config/whichkey/apple_scripts/hsplit.scpt"
+
+  [[groups.mappings]]
+  keys = "vs"
+  kind = "Command"
+  command = "osascript ~/.config/whichkey/apple_scripts/vsplit.scpt"
+
+  [[groups.mappings]]
+  keys = "maw"
+  kind = "Command"
+  command = "osascript ~/.config/whichkey/apple_scripts/max_window.scpt"
+
+  [[groups.mappings]]
+  keys = "miw"
+  kind = "Command"
+  command = "osascript ~/.config/whichkey/apple_scripts/min_window.scpt"
+
