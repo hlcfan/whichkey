@@ -12,9 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-14, macos-15]
-        # Note: macos-26 doesn't exist yet, using available versions
-        # You can update this when macos-26 becomes available
+        os: [macos-latest]
 
     steps:
     - name: Checkout code
@@ -24,11 +22,10 @@ jobs:
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         toolchain: stable
+        rustflags: ""
 
     - name: Build release binary
       run: cargo build --release
-      env:
-        RUSTFLAGS: "-D warnings"
 
     - name: Get binary name and prepare artifact
       id: binary
@@ -80,14 +77,25 @@ jobs:
       run: |
         mkdir -p release-assets
 
+        # Get project name for binary detection
+        PROJECT_NAME=$(grep '^name = ' Cargo.toml | head -1 | sed 's/name = "\(.*\)"/\1/')
+        echo "Looking for binary: $PROJECT_NAME"
+
         # Copy and rename binaries
         for dir in artifacts/*/; do
           if [ -d "$dir" ]; then
             artifact_name=$(basename "$dir")
-            binary_file=$(find "$dir" -type f -executable | head -1)
+            echo "Processing artifact: $artifact_name"
+
+            # Look for the binary file (may not have executable bit set in artifacts)
+            binary_file=$(find "$dir" -name "$PROJECT_NAME" -type f | head -1)
             if [ -n "$binary_file" ]; then
+              echo "Found binary: $binary_file"
               cp "$binary_file" "release-assets/$artifact_name"
               chmod +x "release-assets/$artifact_name"
+            else
+              echo "No binary found in $dir"
+              ls -la "$dir"
             fi
           fi
         done
@@ -96,12 +104,17 @@ jobs:
         echo "Release assets:"
         ls -la release-assets/
 
+        # Check if we have any files to upload
+        if [ -z "$(ls -A release-assets/)" ]; then
+          echo "Error: No release assets found!"
+          exit 1
+        fi
+
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: release-assets/*
         generate_release_notes: true
         draft: false
         prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.RELEASE_TOKEN }}
