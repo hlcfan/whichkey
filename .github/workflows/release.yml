@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-14, macos-15]
+        # Note: macos-26 doesn't exist yet, using available versions
+        # You can update this when macos-26 becomes available
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Build release binary
+      run: cargo build --release
+
+    - name: Get binary name and prepare artifact
+      id: binary
+      run: |
+        # Get the project name from Cargo.toml
+        PROJECT_NAME=$(grep '^name = ' Cargo.toml | head -1 | sed 's/name = "\(.*\)"/\1/')
+        BINARY_PATH="target/release/$PROJECT_NAME"
+        ARTIFACT_NAME="$PROJECT_NAME-${{ matrix.os }}"
+
+        echo "project_name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+        echo "binary_path=$BINARY_PATH" >> $GITHUB_OUTPUT
+        echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
+        # Verify binary exists
+        if [ ! -f "$BINARY_PATH" ]; then
+          echo "Error: Binary not found at $BINARY_PATH"
+          exit 1
+        fi
+
+    - name: Upload binary as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.binary.outputs.artifact_name }}
+        path: ${{ steps.binary.outputs.binary_path }}
+        retention-days: 1
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Get project name
+      id: project
+      run: |
+        PROJECT_NAME=$(grep '^name = ' Cargo.toml | head -1 | sed 's/name = "\(.*\)"/\1/')
+        echo "name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+
+        # Copy and rename binaries
+        for dir in artifacts/*/; do
+          if [ -d "$dir" ]; then
+            artifact_name=$(basename "$dir")
+            binary_file=$(find "$dir" -type f -executable | head -1)
+            if [ -n "$binary_file" ]; then
+              cp "$binary_file" "release-assets/$artifact_name"
+              chmod +x "release-assets/$artifact_name"
+            fi
+          fi
+        done
+
+        # List what we're about to upload
+        echo "Release assets:"
+        ls -la release-assets/
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release-assets/*
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
